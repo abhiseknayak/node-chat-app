@@ -3,6 +3,7 @@ const http =require('http');
 const express =require('express');
 const socketIO=require('socket.io');
 const {generateMessage,generateLocationMessage}=require('./utils/message');
+const {isRealString}=require('./utils/validator');
 
 
 const publicPath=path.join(__dirname,'../public');
@@ -21,9 +22,18 @@ io.on('connection',(socket)=>{
         console.log('user disconnected');
     });
 
-    socket.emit('newMessage',generateMessage('Admin','welcome to the chat app'));
+    
 
-    socket.broadcast.emit('newMessage',generateMessage('Admin','A new user joined'));
+    socket.on('join',(params,callback)=>{
+        if(!isRealString(params.name) || !isRealString(params.room)){
+            callback('Name and Room-name is required');
+        }
+        socket.join(params.room);
+        
+        socket.emit('newMessage',generateMessage('Admin','welcome to the chat app'));
+        socket.broadcast.to(params.room).emit('newMessage',generateMessage('Admin',`${params.name} has joined`));
+        callback();
+    });
 
     socket.on('createMessage',(message,callback)=>{
         console.log('createMessage',message);
